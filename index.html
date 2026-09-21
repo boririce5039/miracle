@@ -87,28 +87,51 @@
     box-shadow: 0 4px 12px rgba(63,63,143,0.4);
   }
 
-  .top-bar {
+  .progress-section {
     max-width: 480px;
-    margin: 0 auto;
+    margin: 16px auto 0;
     padding: 0 22px;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 10px;
   }
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .progress-emoji { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
   .progress-wrap {
     flex: 1;
     height: 9px;
     background: #eee6d8;
     border-radius: 6px;
     overflow: hidden;
-    margin-right: 14px;
   }
   .progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
     width: 0%;
     border-radius: 6px;
     transition: width 0.35s ease;
+  }
+  .progress-bar.morning-fill { background: linear-gradient(90deg, var(--morning-a), var(--morning-b)); }
+  .progress-bar.evening-fill { background: linear-gradient(90deg, var(--evening-a), var(--evening-b)); }
+  .progress-count {
+    font-family: 'Gaegu', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--sub);
+    width: 38px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .mute-row {
+    max-width: 480px;
+    margin: 12px auto 0;
+    padding: 0 22px;
+    display: flex;
+    justify-content: flex-end;
   }
   .mute-toggle {
     display: flex;
@@ -140,7 +163,7 @@
 
   .list {
     max-width: 480px;
-    margin: 26px auto 0;
+    margin: 20px auto 0;
     padding: 6px 22px;
     display: flex;
     flex-direction: column;
@@ -221,35 +244,60 @@
     box-shadow: 0 4px 12px rgba(58,50,30,0.18);
   }
 
-  .finish {
-    max-width: 480px;
-    margin: 30px auto 0;
-    padding: 26px 22px;
-    text-align: center;
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(40,32,20,0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 1000;
   }
-  .finish h2 {
+  .modal-card {
+    background: var(--card);
+    border-radius: 22px;
+    padding: 30px 26px 26px;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.28);
+  }
+  .modal-card h2 {
     font-family: 'Gaegu', sans-serif;
     font-size: 24px;
-    margin-bottom: 8px;
+    margin: 0 0 10px;
   }
-  .finish p {
+  .modal-card p {
     font-family: 'NanumSquare', 'Nanum Gothic', sans-serif;
     font-size: 14px;
     color: var(--sub);
+    margin: 0 0 22px;
   }
-  .finish button {
-    margin-top: 16px;
-    padding: 11px 26px;
-    border-radius: 22px;
+  .modal-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  .modal-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 16px;
     border: none;
     font-family: 'Gaegu', sans-serif;
     font-weight: 700;
-    background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
-    color: #fff;
     font-size: 15px;
     cursor: pointer;
+  }
+  .modal-btn.secondary {
+    background: #f1ece2;
+    color: #8a7f6c;
+  }
+  .modal-btn.primary {
+    background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+    color: #fff;
     box-shadow: 0 4px 12px rgba(58,50,30,0.18);
   }
+
   .empty-note {
     max-width: 480px;
     margin: 36px auto;
@@ -283,8 +331,20 @@
   <button id="btnEvening">🌙 저녁</button>
 </div>
 
-<div class="top-bar">
-  <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+<div class="progress-section">
+  <div class="progress-row">
+    <span class="progress-emoji">🌅</span>
+    <div class="progress-wrap"><div class="progress-bar morning-fill" id="progressBarMorning"></div></div>
+    <span class="progress-count" id="progressCountMorning">0/0</span>
+  </div>
+  <div class="progress-row">
+    <span class="progress-emoji">🌙</span>
+    <div class="progress-wrap"><div class="progress-bar evening-fill" id="progressBarEvening"></div></div>
+    <span class="progress-count" id="progressCountEvening">0/0</span>
+  </div>
+</div>
+
+<div class="mute-row">
   <label class="mute-toggle">
     <span id="muteLabel">🔊 음성</span>
     <span class="switch">
@@ -301,10 +361,15 @@
 <div class="list" id="list"></div>
 <div class="empty-note" id="emptyNote" style="display:none;"></div>
 
-<div class="finish" id="finishBox" style="display:none;">
-  <h2 id="finishTitle">🎉 오늘도 잘 외쳤어요!</h2>
-  <p id="finishSub"></p>
-  <button id="restartBtn">다시 하기</button>
+<div class="modal-overlay" id="finishOverlay">
+  <div class="modal-card">
+    <h2 id="finishTitle">🎉 오늘도 잘 외쳤어요!</h2>
+    <p id="finishSub"></p>
+    <div class="modal-buttons">
+      <button id="doneBtn" class="modal-btn secondary">완료</button>
+      <button id="restartBtn" class="modal-btn primary">한번 더</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -312,22 +377,19 @@
    * ▼▼▼ 여기에 구글 앱스 스크립트를 웹 앱으로 배포한 뒤 나온 .../exec 주소를 붙여넣으세요 ▼▼▼
    * 아직 설정하지 않으면 예시 문장으로만 동작하며 기록은 저장되지 않습니다.
    */
-  const API_URL = 'https://script.google.com/macros/s/AKfycbxo5umFliA_C6fR2hI-Mp8SjCYesertZjmkgGLhp40Z2-0KThAFdIP682Lg3g2JzLIF/exec';
+  const API_URL = '여기에_앱스스크립트_exec_주소를_붙여넣으세요';
 
   function isApiConfigured() {
     return API_URL && API_URL.indexOf('여기에') !== 0;
   }
 
-  const state = {
-    mode: (new Date().getHours() < 14) ? 'morning' : 'evening',
-    sentences: [],
-    current: 0,
-    muted: false,
-    doneCount: 0,
-    usedVoice: false,
-    usedManual: false,
-    recognition: null
+  // 아침/저녁 각각의 진행 상태를 독립적으로 저장 - 탭을 오가도 진행률이 유지됩니다.
+  const modes = {
+    morning: { sentences: [], doneCount: 0, currentIndex: 0, loaded: false, finished: false, usedVoice: false, usedManual: false },
+    evening: { sentences: [], doneCount: 0, currentIndex: 0, loaded: false, finished: false, usedVoice: false, usedManual: false }
   };
+  let activeMode = (new Date().getHours() < 14) ? 'morning' : 'evening';
+  let muted = false;
 
   const el = {
     header: document.getElementById('header'),
@@ -338,12 +400,16 @@
     list: document.getElementById('list'),
     emptyNote: document.getElementById('emptyNote'),
     apiWarning: document.getElementById('apiWarning'),
-    progressBar: document.getElementById('progressBar'),
+    progressBarMorning: document.getElementById('progressBarMorning'),
+    progressBarEvening: document.getElementById('progressBarEvening'),
+    progressCountMorning: document.getElementById('progressCountMorning'),
+    progressCountEvening: document.getElementById('progressCountEvening'),
     muteCheckbox: document.getElementById('muteCheckbox'),
     muteLabel: document.getElementById('muteLabel'),
-    finishBox: document.getElementById('finishBox'),
+    finishOverlay: document.getElementById('finishOverlay'),
     finishTitle: document.getElementById('finishTitle'),
     finishSub: document.getElementById('finishSub'),
+    doneBtn: document.getElementById('doneBtn'),
     restartBtn: document.getElementById('restartBtn')
   };
 
@@ -368,8 +434,18 @@
     return Math.min(6000, Math.max(2000, len * 130));
   }
 
-  function setMode(mode) {
-    state.mode = mode;
+  function updateProgress(mode) {
+    const m = modes[mode];
+    const total = m.sentences.length;
+    const pct = total ? (m.doneCount / total) * 100 : 0;
+    const bar = mode === 'morning' ? el.progressBarMorning : el.progressBarEvening;
+    const count = mode === 'morning' ? el.progressCountMorning : el.progressCountEvening;
+    bar.style.width = pct + '%';
+    count.textContent = m.doneCount + '/' + total;
+  }
+
+  function switchToMode(mode) {
+    activeMode = mode;
     document.body.className = mode;
     el.btnMorning.classList.toggle('active', mode === 'morning');
     el.btnEvening.classList.toggle('active', mode === 'evening');
@@ -378,26 +454,30 @@
     el.headerSub.textContent = mode === 'morning'
       ? '한 문장씩 소리내어 외치고 체크해보세요'
       : '오늘 하루를 정리하며 한 문장씩 읽어보세요';
-    loadSentences();
+    el.finishOverlay.style.display = 'none';
+    el.emptyNote.style.display = 'none';
+    el.list.innerHTML = '';
+
+    if (modes[mode].loaded) {
+      displayMode(mode);
+    } else {
+      fetchSentences(mode);
+    }
   }
 
-  function loadSentences() {
-    el.finishBox.style.display = 'none';
-    el.list.innerHTML = '';
-    el.emptyNote.style.display = 'none';
+  function fetchSentences(mode) {
     el.apiWarning.style.display = isApiConfigured() ? 'none' : 'block';
-
     if (!isApiConfigured()) {
-      onSentencesLoaded(state.mode === 'morning'
+      const dummy = mode === 'morning'
         ? ['나는 오늘도 잘 해낼 수 있다', '나는 나의 속도로 나아간다', '오늘 하루도 감사한 마음으로 시작한다']
-        : ['오늘 하루 애썼다', '나는 내일 더 나은 방향으로 나아간다', '편안한 마음으로 하루를 마무리한다']);
+        : ['오늘 하루 애썼다', '나는 내일 더 나은 방향으로 나아간다', '편안한 마음으로 하루를 마무리한다'];
+      initModeData(mode, dummy);
       return;
     }
-
-    fetch(API_URL + '?action=getSentences&mode=' + state.mode)
+    fetch(API_URL + '?action=getSentences&mode=' + mode)
       .then(function (res) { return res.json(); })
-      .then(function (data) { onSentencesLoaded(data.sentences); })
-      .catch(onLoadError);
+      .then(function (data) { initModeData(mode, data.sentences); })
+      .catch(function (err) { if (mode === activeMode) onLoadError(err); });
   }
 
   function onLoadError(err) {
@@ -405,39 +485,53 @@
     el.emptyNote.textContent = '문장을 불러오지 못했어요: ' + (err && err.message ? err.message : err);
   }
 
-  function onSentencesLoaded(list) {
-    state.sentences = list || [];
-    state.current = 0;
-    state.doneCount = 0;
-    state.usedVoice = false;
-    state.usedManual = false;
-    if (state.sentences.length === 0) {
-      el.emptyNote.style.display = 'block';
-      el.emptyNote.textContent = "아직 등록된 문장이 없어요. 스프레드시트의 '아침문장' / '저녁문장' 시트에 문장을 입력해주세요.";
-      updateProgress();
-      return;
-    }
-    render();
-    activateCard(0);
+  function initModeData(mode, list) {
+    const m = modes[mode];
+    m.sentences = list || [];
+    m.doneCount = 0;
+    m.currentIndex = 0;
+    m.finished = false;
+    m.usedVoice = false;
+    m.usedManual = false;
+    m.loaded = true;
+    updateProgress(mode);
+    if (mode === activeMode) displayMode(mode);
   }
 
-  function render() {
+  function displayMode(mode) {
+    const m = modes[mode];
+    updateProgress(mode);
+    if (m.sentences.length === 0) {
+      el.emptyNote.style.display = 'block';
+      el.emptyNote.textContent = "아직 등록된 문장이 없어요. 스프레드시트의 '아침문장' / '저녁문장' 시트에 문장을 입력해주세요.";
+      el.list.innerHTML = '';
+      return;
+    }
+    el.emptyNote.style.display = 'none';
+    buildCards(mode);
+    if (!m.finished) {
+      activateCard(m.currentIndex);
+    }
+  }
+
+  function buildCards(mode) {
+    const m = modes[mode];
     el.list.innerHTML = '';
-    state.sentences.forEach(function (sentence, i) {
+    m.sentences.forEach(function (sentence, i) {
+      const isDone = i < m.currentIndex || m.finished;
       const card = document.createElement('div');
-      card.className = 'card';
+      card.className = 'card' + (isDone ? ' done' : '');
       card.id = 'card-' + i;
       card.innerHTML =
-        '<div class="num">' + (i + 1) + ' / ' + state.sentences.length + '</div>' +
+        '<div class="num">' + (i + 1) + ' / ' + m.sentences.length + '</div>' +
         '<div class="sentence">' + escapeHtml(sentence) + '</div>' +
-        '<div class="status" id="status-' + i + '"></div>' +
-        '<button class="check-btn" id="btn-' + i + '">체크하기</button>';
+        '<div class="status' + (isDone ? ' done-text' : '') + '" id="status-' + i + '">' + (isDone ? '✅ 완료' : '') + '</div>' +
+        '<button class="check-btn" id="btn-' + i + '" style="' + (isDone ? 'display:none;' : '') + '">체크하기</button>';
       el.list.appendChild(card);
       document.getElementById('btn-' + i).addEventListener('click', function () {
         if (this.classList.contains('ready')) markDone(i, 'manual');
       });
     });
-    updateProgress();
   }
 
   function escapeHtml(s) {
@@ -445,17 +539,20 @@
   }
 
   function activateCard(i) {
-    if (i >= state.sentences.length) return;
+    const m = modes[activeMode];
+    if (i >= m.sentences.length) return;
     const card = document.getElementById('card-' + i);
     const status = document.getElementById('status-' + i);
     const btn = document.getElementById('btn-' + i);
+    if (!card) return;
     card.classList.add('active');
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    if (!state.muted && SpeechRec) {
+    if (!muted && SpeechRec) {
       status.textContent = '🎤 마이크에 대고 소리내어 읽어주세요...';
       status.className = 'status listening';
-      startRecognition(i, state.sentences[i]);
-      const delay = unlockDelayFor(state.sentences[i]) + 4000;
+      startRecognition(i, m.sentences[i]);
+      const delay = unlockDelayFor(m.sentences[i]) + 4000;
       setTimeout(function () {
         if (!card.classList.contains('done')) {
           btn.classList.add('ready');
@@ -465,7 +562,7 @@
     } else {
       status.textContent = SpeechRec ? '' : '(이 브라우저는 음성 인식을 지원하지 않아요)';
       status.className = 'status';
-      const delay = unlockDelayFor(state.sentences[i]);
+      const delay = unlockDelayFor(m.sentences[i]);
       let remain = Math.ceil(delay / 1000);
       btn.textContent = '소리내어 읽는 중... ' + remain + '초';
       const tick = setInterval(function () {
@@ -481,68 +578,98 @@
     }
   }
 
-  function startRecognition(i, sentence) {
-    try {
-      const rec = new SpeechRec();
-      rec.lang = 'ko-KR';
-      rec.interimResults = true;
-      rec.continuous = false;
-      state.recognition = rec;
+  let sharedRecognition = null;
+  let micPermissionAsked = false;
 
-      rec.onresult = function (e) {
-        let transcript = '';
-        for (let r = 0; r < e.results.length; r++) transcript += e.results[r][0].transcript;
-        const sim = similarity(transcript, sentence);
-        if (sim >= 0.45) {
-          rec.stop();
-          markDone(i, 'voice');
-        }
-      };
-      rec.onerror = function () { /* 조용히 무시, 시간 초과 시 수동 버튼으로 대체됨 */ };
-      rec.onend = function () { /* 자동으로 끝나도 수동 버튼이 곧 열림 */ };
-      rec.start();
-    } catch (err) {
-      // 마이크 권한 거부 등 - 수동 버튼으로 대체
+  // 마이크 권한은 앱 전체에서 딱 한 번만 명시적으로 물어보고,
+  // 이후에는 이미 허용된 권한을 그대로 재사용합니다.
+  function ensureMicPermission(callback) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { callback(); return; }
+    if (micPermissionAsked) { callback(); return; }
+    micPermissionAsked = true;
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(function (stream) {
+        stream.getTracks().forEach(function (t) { t.stop(); });
+        callback();
+      })
+      .catch(function () { callback(); });
+  }
+
+  // SpeechRecognition 객체도 문장마다 새로 만들지 않고 하나만 계속 재사용합니다.
+  function getSharedRecognition() {
+    if (!sharedRecognition && SpeechRec) {
+      sharedRecognition = new SpeechRec();
+      sharedRecognition.lang = 'ko-KR';
+      sharedRecognition.interimResults = true;
+      sharedRecognition.continuous = false;
     }
+    return sharedRecognition;
+  }
+
+  function startRecognition(i, sentence) {
+    ensureMicPermission(function () {
+      try {
+        const rec = getSharedRecognition();
+        if (!rec) return;
+        rec.onresult = function (e) {
+          let transcript = '';
+          for (let r = 0; r < e.results.length; r++) transcript += e.results[r][0].transcript;
+          const sim = similarity(transcript, sentence);
+          if (sim >= 0.45) {
+            rec.stop();
+            markDone(i, 'voice');
+          }
+        };
+        rec.onerror = function () { /* 조용히 무시, 시간 초과 시 수동 버튼으로 대체됨 */ };
+        rec.onend = function () { /* 자동으로 끝나도 수동 버튼이 곧 열림 */ };
+        rec.start();
+      } catch (err) {
+        // 마이크 권한 거부 등 - 수동 버튼으로 대체
+      }
+    });
   }
 
   function markDone(i, method) {
-    if (state.recognition) { try { state.recognition.stop(); } catch (e) {} state.recognition = null; }
+    const mode = activeMode;
+    const m = modes[mode];
+    if (sharedRecognition) { try { sharedRecognition.stop(); } catch (e) {} }
+
     const card = document.getElementById('card-' + i);
     const status = document.getElementById('status-' + i);
     const btn = document.getElementById('btn-' + i);
-    if (card.classList.contains('done')) return;
+    if (!card || card.classList.contains('done')) return;
     card.classList.remove('active');
     card.classList.add('done');
     status.textContent = '✅ 완료';
     status.className = 'status done-text';
     btn.style.display = 'none';
-    if (method === 'voice') state.usedVoice = true;
-    if (method === 'manual') state.usedManual = true;
-    state.doneCount++;
-    updateProgress();
+    if (method === 'voice') m.usedVoice = true;
+    if (method === 'manual') m.usedManual = true;
+    m.doneCount++;
+    m.currentIndex = i + 1;
+    updateProgress(mode);
 
-    const next = i + 1;
-    const delay = unlockDelayFor(state.sentences[i]);
+    const delay = unlockDelayFor(m.sentences[i]);
     setTimeout(function () {
-      if (next < state.sentences.length) {
-        activateCard(next);
+      if (activeMode !== mode) return; // 그 사이 다른 탭으로 이동했으면 여기서는 아무것도 활성화하지 않음
+      if (m.currentIndex < m.sentences.length) {
+        activateCard(m.currentIndex);
       } else {
-        finish();
+        m.finished = true;
+        finish(mode);
       }
     }, delay);
   }
 
-  function updateProgress() {
-    const pct = state.sentences.length ? (state.doneCount / state.sentences.length) * 100 : 0;
-    el.progressBar.style.width = pct + '%';
-  }
+  function finish(mode) {
+    const m = modes[mode];
+    const method = m.usedVoice && !m.usedManual ? '음성'
+      : (!m.usedVoice && m.usedManual ? '수동' : '음성+수동');
 
-  function finish() {
-    el.finishBox.style.display = 'block';
-    const method = state.usedVoice && !state.usedManual ? '음성'
-      : (!state.usedVoice && state.usedManual ? '수동' : '음성+수동');
-    el.finishSub.textContent = state.sentences.length + '문장을 모두 ' + (state.mode === 'morning' ? '외쳤어요' : '되새겼어요') + '. (' + method + ')';
+    if (mode === activeMode) {
+      el.finishOverlay.style.display = 'flex';
+      el.finishSub.textContent = m.sentences.length + '문장을 모두 ' + (mode === 'morning' ? '외쳤어요' : '되새겼어요') + '. (' + method + ')';
+    }
 
     if (isApiConfigured()) {
       fetch(API_URL, {
@@ -550,9 +677,9 @@
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action: 'saveRecord',
-          mode: state.mode,
-          total: state.sentences.length,
-          completed: state.doneCount,
+          mode: mode,
+          total: m.sentences.length,
+          completed: m.doneCount,
           method: method
         })
       }).catch(function () { /* 기록 저장 실패는 조용히 무시 */ });
@@ -560,14 +687,19 @@
   }
 
   el.muteCheckbox.addEventListener('change', function () {
-    state.muted = this.checked;
-    el.muteLabel.textContent = state.muted ? '🔇 수동' : '🔊 음성';
+    muted = this.checked;
+    el.muteLabel.textContent = muted ? '🔇 수동' : '🔊 음성';
   });
-  el.btnMorning.addEventListener('click', function () { setMode('morning'); });
-  el.btnEvening.addEventListener('click', function () { setMode('evening'); });
-  el.restartBtn.addEventListener('click', function () { loadSentences(); });
+  el.btnMorning.addEventListener('click', function () { switchToMode('morning'); });
+  el.btnEvening.addEventListener('click', function () { switchToMode('evening'); });
+  el.doneBtn.addEventListener('click', function () { el.finishOverlay.style.display = 'none'; });
+  el.restartBtn.addEventListener('click', function () {
+    el.finishOverlay.style.display = 'none';
+    modes[activeMode].loaded = false;
+    fetchSentences(activeMode);
+  });
 
-  setMode(state.mode);
+  switchToMode(activeMode);
 </script>
 </body>
 </html>
