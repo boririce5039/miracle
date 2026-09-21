@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>아침저녁 확언</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@300;400;700&family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet">
+<!-- 나눔스퀘어(NanumSquare) 웹폰트: 구글 폰트에는 정식 등록되어 있지 않아 커뮤니티 CDN을 사용합니다.
+     혹시 이 CDN이 막혀 있다면 아래 링크를 지우면 자동으로 Nanum Gothic으로 대체됩니다. -->
+<link href="https://cdn.jsdelivr.net/gh/webfontworld/NanumSquare/NanumSquare.css" rel="stylesheet">
+<style>
+  :root {
+    --morning-a: #ffcf7a;
+    --morning-b: #ff9a6b;
+    --evening-a: #8b93ff;
+    --evening-b: #3f3f8f;
+    --bg: #fbf8f2;
+    --card: #ffffff;
+    --text: #3a352e;
+    --sub: #a39a8c;
+    --done: #63b56c;
+    --accent-a: var(--morning-a);
+    --accent-b: var(--morning-b);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Gaegu', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: var(--bg);
+    background-image: radial-gradient(circle at 20% 0%, rgba(255,207,122,0.12), transparent 45%),
+                       radial-gradient(circle at 90% 10%, rgba(139,147,255,0.10), transparent 40%);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 44px;
+    transition: background 0.4s ease;
+  }
+  body.evening { --accent-a: var(--evening-a); --accent-b: var(--evening-b); }
+  body.morning { --accent-a: var(--morning-a); --accent-b: var(--morning-b); }
+
+  header {
+    padding: 34px 20px 26px;
+    color: #fff;
+    text-align: center;
+    border-radius: 0 0 28px 28px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    transition: background 0.4s ease;
+  }
+  header.morning { background: linear-gradient(135deg, var(--morning-a), var(--morning-b)); }
+  header.evening { background: linear-gradient(135deg, var(--evening-a), var(--evening-b)); }
+  header h1 {
+    margin: 0 0 6px;
+    font-size: 26px;
+    font-weight: 700;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    letter-spacing: 0.5px;
+  }
+  header p { margin: 0; opacity: 0.92; font-size: 14px; }
+
+  .mode-switch {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 18px 0 14px;
+  }
+  .mode-switch button {
+    border: none;
+    border-radius: 22px;
+    padding: 9px 20px;
+    font-family: 'Gaegu', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    background: #f1ece2;
+    color: #a99c8a;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  body.morning .mode-switch button.active {
+    background: linear-gradient(135deg, var(--morning-a), var(--morning-b));
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(255,154,107,0.4);
+  }
+  body.evening .mode-switch button.active {
+    background: linear-gradient(135deg, var(--evening-a), var(--evening-b));
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(63,63,143,0.4);
+  }
+
+  .top-bar {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .progress-wrap {
+    flex: 1;
+    height: 9px;
+    background: #eee6d8;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-right: 14px;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+    width: 0%;
+    border-radius: 6px;
+    transition: width 0.35s ease;
+  }
+  .mute-toggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'Gaegu', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--sub);
+    white-space: nowrap;
+  }
+  .switch {
+    position: relative;
+    width: 40px;
+    height: 23px;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #ddd4c4; border-radius: 22px; transition: 0.2s;
+  }
+  .slider:before {
+    content: ""; position: absolute; height: 17px; width: 17px;
+    left: 3px; bottom: 3px; background: white; border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25); transition: 0.2s;
+  }
+  input:checked + .slider { background: var(--accent-b); }
+  input:checked + .slider:before { transform: translateX(17px); }
+
+  .list {
+    max-width: 480px;
+    margin: 26px auto 0;
+    padding: 6px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .card {
+    position: relative;
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px 18px 16px;
+    box-shadow: 0 3px 10px rgba(58,50,30,0.07), 0 1px 3px rgba(58,50,30,0.05);
+    opacity: 0.45;
+    transform: rotate(var(--tilt, 0deg));
+    transition: opacity 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+  }
+  .card:nth-child(3n+1) { --tilt: -0.7deg; }
+  .card:nth-child(3n+2) { --tilt: 0.6deg; }
+  .card:nth-child(3n)   { --tilt: -0.3deg; }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: -9px; left: 24px;
+    width: 44px; height: 16px;
+    background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+    opacity: 0.55;
+    border-radius: 2px;
+    transform: rotate(-5deg);
+  }
+  .card.active {
+    opacity: 1;
+    transform: scale(1.02) rotate(0deg);
+    box-shadow: 0 10px 26px rgba(58,50,30,0.16);
+  }
+  .card.done { opacity: 0.6; }
+  .card .num {
+    font-family: 'Gaegu', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--sub);
+    margin-bottom: 6px;
+  }
+  .card .sentence {
+    font-family: 'NanumSquare', 'Nanum Gothic', 'Apple SD Gothic Neo', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    line-height: 1.6;
+    letter-spacing: -0.2px;
+    margin-bottom: 12px;
+  }
+  .card .status {
+    font-family: 'Gaegu', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--sub);
+    min-height: 20px;
+  }
+  .card .status.listening { color: #e0655e; }
+  .card .status.done-text { color: var(--done); }
+
+  .check-btn {
+    margin-top: 10px;
+    width: 100%;
+    padding: 11px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Gaegu', sans-serif;
+    background: #f1ece2;
+    color: #b3a894;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: not-allowed;
+    transition: all 0.25s ease;
+  }
+  .check-btn.ready {
+    background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(58,50,30,0.18);
+  }
+
+  .finish {
+    max-width: 480px;
+    margin: 30px auto 0;
+    padding: 26px 22px;
+    text-align: center;
+  }
+  .finish h2 {
+    font-family: 'Gaegu', sans-serif;
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+  .finish p {
+    font-family: 'NanumSquare', 'Nanum Gothic', sans-serif;
+    font-size: 14px;
+    color: var(--sub);
+  }
+  .finish button {
+    margin-top: 16px;
+    padding: 11px 26px;
+    border-radius: 22px;
+    border: none;
+    font-family: 'Gaegu', sans-serif;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+    color: #fff;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(58,50,30,0.18);
+  }
+  .empty-note {
+    max-width: 480px;
+    margin: 36px auto;
+    text-align: center;
+    font-family: 'Gaegu', sans-serif;
+    color: var(--sub);
+    font-size: 15px;
+    padding: 0 22px;
+    line-height: 1.6;
+  }
+  .api-warning {
+    max-width: 480px;
+    margin: 14px auto 0;
+    padding: 10px 22px;
+    text-align: center;
+    font-family: 'Gaegu', sans-serif;
+    font-size: 13px;
+    color: #c0392b;
+  }
+</style>
+</head>
+<body class="morning">
+
+<header id="header" class="morning">
+  <h1 id="headerTitle">오늘의 다짐</h1>
+  <p id="headerSub">한 문장씩 소리내어 읽고 체크해보세요</p>
+</header>
+
+<div class="mode-switch">
+  <button id="btnMorning">🌅 아침</button>
+  <button id="btnEvening">🌙 저녁</button>
+</div>
+
+<div class="top-bar">
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+  <label class="mute-toggle">
+    <span id="muteLabel">🔊 음성</span>
+    <span class="switch">
+      <input type="checkbox" id="muteCheckbox">
+      <span class="slider"></span>
+    </span>
+  </label>
+</div>
+
+<div id="apiWarning" class="api-warning" style="display:none;">
+  ⚠️ 아직 API_URL이 설정되지 않아 예시 문장으로 보여드리고 있어요. (기록은 저장되지 않습니다)
+</div>
+
+<div class="list" id="list"></div>
+<div class="empty-note" id="emptyNote" style="display:none;"></div>
+
+<div class="finish" id="finishBox" style="display:none;">
+  <h2 id="finishTitle">🎉 오늘도 잘 외쳤어요!</h2>
+  <p id="finishSub"></p>
+  <button id="restartBtn">다시 하기</button>
+</div>
+
+<script>
+  /**
+   * ▼▼▼ 여기에 구글 앱스 스크립트를 웹 앱으로 배포한 뒤 나온 .../exec 주소를 붙여넣으세요 ▼▼▼
+   * 아직 설정하지 않으면 예시 문장으로만 동작하며 기록은 저장되지 않습니다.
+   */
+  const API_URL = 'https://script.google.com/macros/s/AKfycbxo5umFliA_C6fR2hI-Mp8SjCYesertZjmkgGLhp40Z2-0KThAFdIP682Lg3g2JzLIF/exec';
+
+  function isApiConfigured() {
+    return API_URL && API_URL.indexOf('여기에') !== 0;
+  }
+
+  const state = {
+    mode: (new Date().getHours() < 14) ? 'morning' : 'evening',
+    sentences: [],
+    current: 0,
+    muted: false,
+    doneCount: 0,
+    usedVoice: false,
+    usedManual: false,
+    recognition: null
+  };
+
+  const el = {
+    header: document.getElementById('header'),
+    headerTitle: document.getElementById('headerTitle'),
+    headerSub: document.getElementById('headerSub'),
+    btnMorning: document.getElementById('btnMorning'),
+    btnEvening: document.getElementById('btnEvening'),
+    list: document.getElementById('list'),
+    emptyNote: document.getElementById('emptyNote'),
+    apiWarning: document.getElementById('apiWarning'),
+    progressBar: document.getElementById('progressBar'),
+    muteCheckbox: document.getElementById('muteCheckbox'),
+    muteLabel: document.getElementById('muteLabel'),
+    finishBox: document.getElementById('finishBox'),
+    finishTitle: document.getElementById('finishTitle'),
+    finishSub: document.getElementById('finishSub'),
+    restartBtn: document.getElementById('restartBtn')
+  };
+
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  function normalize(s) {
+    return (s || '').replace(/[\s.,!?~^"'()\[\]]/g, '');
+  }
+
+  function similarity(spoken, target) {
+    const a = normalize(spoken);
+    const b = normalize(target);
+    if (!a || !b) return 0;
+    const setA = new Set(a.split(''));
+    let match = 0;
+    for (const ch of setA) if (b.includes(ch)) match++;
+    return match / b.length;
+  }
+
+  function unlockDelayFor(sentence) {
+    const len = (sentence || '').length;
+    return Math.min(6000, Math.max(2000, len * 130));
+  }
+
+  function setMode(mode) {
+    state.mode = mode;
+    document.body.className = mode;
+    el.btnMorning.classList.toggle('active', mode === 'morning');
+    el.btnEvening.classList.toggle('active', mode === 'evening');
+    el.header.className = mode;
+    el.headerTitle.textContent = mode === 'morning' ? '오늘 아침의 선언' : '오늘 저녁, 방향을 잡는 다짐';
+    el.headerSub.textContent = mode === 'morning'
+      ? '한 문장씩 소리내어 외치고 체크해보세요'
+      : '오늘 하루를 정리하며 한 문장씩 읽어보세요';
+    loadSentences();
+  }
+
+  function loadSentences() {
+    el.finishBox.style.display = 'none';
+    el.list.innerHTML = '';
+    el.emptyNote.style.display = 'none';
+    el.apiWarning.style.display = isApiConfigured() ? 'none' : 'block';
+
+    if (!isApiConfigured()) {
+      onSentencesLoaded(state.mode === 'morning'
+        ? ['나는 오늘도 잘 해낼 수 있다', '나는 나의 속도로 나아간다', '오늘 하루도 감사한 마음으로 시작한다']
+        : ['오늘 하루 애썼다', '나는 내일 더 나은 방향으로 나아간다', '편안한 마음으로 하루를 마무리한다']);
+      return;
+    }
+
+    fetch(API_URL + '?action=getSentences&mode=' + state.mode)
+      .then(function (res) { return res.json(); })
+      .then(function (data) { onSentencesLoaded(data.sentences); })
+      .catch(onLoadError);
+  }
+
+  function onLoadError(err) {
+    el.emptyNote.style.display = 'block';
+    el.emptyNote.textContent = '문장을 불러오지 못했어요: ' + (err && err.message ? err.message : err);
+  }
+
+  function onSentencesLoaded(list) {
+    state.sentences = list || [];
+    state.current = 0;
+    state.doneCount = 0;
+    state.usedVoice = false;
+    state.usedManual = false;
+    if (state.sentences.length === 0) {
+      el.emptyNote.style.display = 'block';
+      el.emptyNote.textContent = "아직 등록된 문장이 없어요. 스프레드시트의 '아침문장' / '저녁문장' 시트에 문장을 입력해주세요.";
+      updateProgress();
+      return;
+    }
+    render();
+    activateCard(0);
+  }
+
+  function render() {
+    el.list.innerHTML = '';
+    state.sentences.forEach(function (sentence, i) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.id = 'card-' + i;
+      card.innerHTML =
+        '<div class="num">' + (i + 1) + ' / ' + state.sentences.length + '</div>' +
+        '<div class="sentence">' + escapeHtml(sentence) + '</div>' +
+        '<div class="status" id="status-' + i + '"></div>' +
+        '<button class="check-btn" id="btn-' + i + '">체크하기</button>';
+      el.list.appendChild(card);
+      document.getElementById('btn-' + i).addEventListener('click', function () {
+        if (this.classList.contains('ready')) markDone(i, 'manual');
+      });
+    });
+    updateProgress();
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function activateCard(i) {
+    if (i >= state.sentences.length) return;
+    const card = document.getElementById('card-' + i);
+    const status = document.getElementById('status-' + i);
+    const btn = document.getElementById('btn-' + i);
+    card.classList.add('active');
+
+    if (!state.muted && SpeechRec) {
+      status.textContent = '🎤 마이크에 대고 소리내어 읽어주세요...';
+      status.className = 'status listening';
+      startRecognition(i, state.sentences[i]);
+      const delay = unlockDelayFor(state.sentences[i]) + 4000;
+      setTimeout(function () {
+        if (!card.classList.contains('done')) {
+          btn.classList.add('ready');
+          btn.textContent = '음성 인식이 안 되면 여기를 눌러 체크';
+        }
+      }, delay);
+    } else {
+      status.textContent = SpeechRec ? '' : '(이 브라우저는 음성 인식을 지원하지 않아요)';
+      status.className = 'status';
+      const delay = unlockDelayFor(state.sentences[i]);
+      let remain = Math.ceil(delay / 1000);
+      btn.textContent = '소리내어 읽는 중... ' + remain + '초';
+      const tick = setInterval(function () {
+        remain -= 1;
+        if (remain <= 0) {
+          clearInterval(tick);
+          btn.textContent = '✅ 다 읽었어요, 체크하기';
+          btn.classList.add('ready');
+        } else {
+          btn.textContent = '소리내어 읽는 중... ' + remain + '초';
+        }
+      }, 1000);
+    }
+  }
+
+  function startRecognition(i, sentence) {
+    try {
+      const rec = new SpeechRec();
+      rec.lang = 'ko-KR';
+      rec.interimResults = true;
+      rec.continuous = false;
+      state.recognition = rec;
+
+      rec.onresult = function (e) {
+        let transcript = '';
+        for (let r = 0; r < e.results.length; r++) transcript += e.results[r][0].transcript;
+        const sim = similarity(transcript, sentence);
+        if (sim >= 0.45) {
+          rec.stop();
+          markDone(i, 'voice');
+        }
+      };
+      rec.onerror = function () { /* 조용히 무시, 시간 초과 시 수동 버튼으로 대체됨 */ };
+      rec.onend = function () { /* 자동으로 끝나도 수동 버튼이 곧 열림 */ };
+      rec.start();
+    } catch (err) {
+      // 마이크 권한 거부 등 - 수동 버튼으로 대체
+    }
+  }
+
+  function markDone(i, method) {
+    if (state.recognition) { try { state.recognition.stop(); } catch (e) {} state.recognition = null; }
+    const card = document.getElementById('card-' + i);
+    const status = document.getElementById('status-' + i);
+    const btn = document.getElementById('btn-' + i);
+    if (card.classList.contains('done')) return;
+    card.classList.remove('active');
+    card.classList.add('done');
+    status.textContent = '✅ 완료';
+    status.className = 'status done-text';
+    btn.style.display = 'none';
+    if (method === 'voice') state.usedVoice = true;
+    if (method === 'manual') state.usedManual = true;
+    state.doneCount++;
+    updateProgress();
+
+    const next = i + 1;
+    const delay = unlockDelayFor(state.sentences[i]);
+    setTimeout(function () {
+      if (next < state.sentences.length) {
+        activateCard(next);
+      } else {
+        finish();
+      }
+    }, delay);
+  }
+
+  function updateProgress() {
+    const pct = state.sentences.length ? (state.doneCount / state.sentences.length) * 100 : 0;
+    el.progressBar.style.width = pct + '%';
+  }
+
+  function finish() {
+    el.finishBox.style.display = 'block';
+    const method = state.usedVoice && !state.usedManual ? '음성'
+      : (!state.usedVoice && state.usedManual ? '수동' : '음성+수동');
+    el.finishSub.textContent = state.sentences.length + '문장을 모두 ' + (state.mode === 'morning' ? '외쳤어요' : '되새겼어요') + '. (' + method + ')';
+
+    if (isApiConfigured()) {
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'saveRecord',
+          mode: state.mode,
+          total: state.sentences.length,
+          completed: state.doneCount,
+          method: method
+        })
+      }).catch(function () { /* 기록 저장 실패는 조용히 무시 */ });
+    }
+  }
+
+  el.muteCheckbox.addEventListener('change', function () {
+    state.muted = this.checked;
+    el.muteLabel.textContent = state.muted ? '🔇 수동' : '🔊 음성';
+  });
+  el.btnMorning.addEventListener('click', function () { setMode('morning'); });
+  el.btnEvening.addEventListener('click', function () { setMode('evening'); });
+  el.restartBtn.addEventListener('click', function () { loadSentences(); });
+
+  setMode(state.mode);
+</script>
+</body>
+</html>
