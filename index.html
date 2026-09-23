@@ -6,10 +6,11 @@
 <title>아침저녁 확언</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@300;400;700&family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet">
+<!-- 폰트가 화면 렌더링을 막지 않도록 비동기로 불러옵니다 (초기 로딩 속도 개선) -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@300;400;700&family=Nanum+Gothic:wght@400;700;800&display=swap" media="print" onload="this.media='all'">
 <!-- 나눔스퀘어(NanumSquare) 웹폰트: 구글 폰트에는 정식 등록되어 있지 않아 커뮤니티 CDN을 사용합니다.
      혹시 이 CDN이 막혀 있다면 아래 링크를 지우면 자동으로 Nanum Gothic으로 대체됩니다. -->
-<link href="https://cdn.jsdelivr.net/gh/webfontworld/NanumSquare/NanumSquare.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/webfontworld/NanumSquare/NanumSquare.css" media="print" onload="this.media='all'">
 <style>
   :root {
     --morning-a: #ffcf7a;
@@ -377,7 +378,7 @@
    * ▼▼▼ 여기에 구글 앱스 스크립트를 웹 앱으로 배포한 뒤 나온 .../exec 주소를 붙여넣으세요 ▼▼▼
    * 아직 설정하지 않으면 예시 문장으로만 동작하며 기록은 저장되지 않습니다.
    */
-  const API_URL = 'https://script.google.com/macros/s/AKfycbxo5umFliA_C6fR2hI-Mp8SjCYesertZjmkgGLhp40Z2-0KThAFdIP682Lg3g2JzLIF/exec';
+  const API_URL = '여기에_앱스스크립트_exec_주소를_붙여넣으세요';
 
   function isApiConfigured() {
     return API_URL && API_URL.indexOf('여기에') !== 0;
@@ -423,6 +424,7 @@
     const a = normalize(spoken);
     const b = normalize(target);
     if (!a || !b) return 0;
+    if (a.length < b.length * 0.5) return 0; // 발화 길이가 문장 절반도 안 되면 매칭하지 않음
     const setA = new Set(a.split(''));
     let match = 0;
     for (const ch of setA) if (b.includes(ch)) match++;
@@ -611,17 +613,37 @@
       try {
         const rec = getSharedRecognition();
         if (!rec) return;
+        let fatalError = false;
+
         rec.onresult = function (e) {
           let transcript = '';
-          for (let r = 0; r < e.results.length; r++) transcript += e.results[r][0].transcript;
+          let hasFinal = false;
+          for (let r = 0; r < e.results.length; r++) {
+            transcript += e.results[r][0].transcript;
+            if (e.results[r].isFinal) hasFinal = true;
+          }
+          if (!hasFinal) return; // 말이 끝나 확정된 결과가 나올 때까지 기다림 (너무 일찍 넘어가는 것 방지)
           const sim = similarity(transcript, sentence);
-          if (sim >= 0.45) {
+          if (sim >= 0.6) {
             rec.stop();
             markDone(i, 'voice');
           }
         };
-        rec.onerror = function () { /* 조용히 무시, 시간 초과 시 수동 버튼으로 대체됨 */ };
-        rec.onend = function () { /* 자동으로 끝나도 수동 버튼이 곧 열림 */ };
+        rec.onerror = function (event) {
+          // 마이크 자체를 못 쓰는 심각한 에러만 재시작하지 않음. 무음 시간초과 등은 onend에서 재시작 처리.
+          if (event && (event.error === 'not-allowed' || event.error === 'audio-capture' || event.error === 'service-not-allowed')) {
+            fatalError = true;
+          }
+        };
+        rec.onend = function () {
+          const card = document.getElementById('card-' + i);
+          // 이 문장을 아직 다 안 읽었으면(=카드가 done이 아니면) 무음으로 꺼졌더라도 자동으로 다시 듣기 시작
+          if (!fatalError && !muted && card && !card.classList.contains('done')) {
+            setTimeout(function () {
+              try { rec.start(); } catch (e) { /* 이미 실행 중이면 무시 */ }
+            }, 300);
+          }
+        };
         rec.start();
       } catch (err) {
         // 마이크 권한 거부 등 - 수동 버튼으로 대체
@@ -700,6 +722,8 @@
   });
 
   switchToMode(activeMode);
+  // 반대쪽 모드도 미리 불러와둬서, 탭을 눌렀을 때 기다림 없이 바로 전환되도록 함
+  fetchSentences(activeMode === 'morning' ? 'evening' : 'morning');
 </script>
 </body>
 </html>
